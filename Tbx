@@ -1,4 +1,4 @@
--- THE STRONGEST BATTLEGROUNDS OPTIMIZED SCRIPT (CodeX/Hydrogen)
+-- THE STRONGEST BATTLEGROUNDS - REAL DODGE + WORKING ULTIMATE (CodeX/Hydrogen)
 -- Password: astro
 
 -- LOGIN GUI
@@ -66,14 +66,9 @@ local function loadMainScript()
     -- FPS BOOSTER
     local function boostFPS()
         pcall(function()
-            -- Disable shadows
             game:GetService("Lighting").ShadowSoftness = 0
             game:GetService("Lighting").Technology = Enum.Technology.Compatibility
-            -- Lower graphics settings
             settings().Rendering.QualityLevel = 1
-            -- Disable unnecessary services
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
-            -- Clear decals
             for _, v in pairs(workspace:GetDescendants()) do
                 if v:IsA("Decal") or v:IsA("Texture") then
                     v.Enabled = false
@@ -177,95 +172,133 @@ local function loadMainScript()
         end
     end
 
-    -- IMPROVED AUTO BLOCK (instant reaction)
+    -- DETECT ENEMY ATTACK (animation based)
+    local function isEnemyAttacking(player)
+        local char = player.Character
+        if not char then return false end
+        -- Check if enemy raised arm (attack animation)
+        local rightArm = char:FindFirstChild("RightArm")
+        local leftArm = char:FindFirstChild("LeftArm")
+        if rightArm and rightArm.Velocity.Y > 30 then
+            return true
+        end
+        if leftArm and leftArm.Velocity.Y > 30 then
+            return true
+        end
+        -- Check if enemy is close and moving fast toward you
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and myHrp then
+            local dist = (hrp.Position - myHrp.Position).Magnitude
+            local speed = hrp.Velocity.Magnitude
+            if dist < 12 and speed > 20 then
+                return true
+            end
+        end
+        return false
+    end
+
+    -- AUTO BLOCK
     local function autoBlock()
         if not autoBlockEnabled then return end
         pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                -- Detect nearby enemy attacks
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        local arm = player.Character:FindFirstChild("RightArm") or player.Character:FindFirstChild("LeftArm")
-                        if arm and (arm.Position - char.HumanoidRootPart.Position).Magnitude < 12 then
-                            VirtualUser:Button1Down(Vector2.new(0,0))
-                            wait(0.01)
-                            VirtualUser:Button1Up(Vector2.new(0,0))
-                        end
-                    end
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and isEnemyAttacking(player) then
+                    VirtualUser:Button1Down(Vector2.new(0,0))
+                    wait(0.01)
+                    VirtualUser:Button1Up(Vector2.new(0,0))
+                    break
                 end
             end
         end)
     end
 
-    -- IMPROVED AUTO DODGE (fast dash backward)
+    -- REAL AUTO DODGE (only when enemy attacks)
     local function autoDodge()
         if not autoDodgeEnabled then return end
         pcall(function()
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                local nearestDist = 12
-                local nearestEnemy = nil
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (player.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if dist < nearestDist then
-                            nearestDist = dist
-                            nearestEnemy = player
-                        end
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local hrp = char.HumanoidRootPart
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and isEnemyAttacking(player) then
+                    local enemyHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if enemyHrp then
+                        -- Dodge backward from enemy
+                        local direction = (hrp.Position - enemyHrp.Position).Unit
+                        hrp.CFrame = hrp.CFrame + direction * 15
+                        -- Press dodge button (F or Q)
+                        VirtualUser:Button2Down(Vector2.new(0,0))
+                        wait(0.05)
+                        VirtualUser:Button2Up(Vector2.new(0,0))
                     end
-                end
-                if nearestEnemy then
-                    -- Fast dash away from enemy
-                    local direction = (hrp.Position - nearestEnemy.Character.HumanoidRootPart.Position).Unit
-                    hrp.CFrame = hrp.CFrame + direction * 15
-                    -- Also trigger dash ability
-                    VirtualUser:Button2Down(Vector2.new(0,0))
-                    wait(0.05)
-                    VirtualUser:Button2Up(Vector2.new(0,0))
+                    break
                 end
             end
         end)
     end
 
-    -- AUTO DASH TO ENEMY (if needed)
+    -- AUTO DASH TO ENEMY (when not attacking)
     local function autoDash()
         if not autoDashEnabled then return end
         pcall(function()
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                local nearestDist = 20
-                local nearestEnemy = nil
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (player.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if dist < nearestDist and dist > 8 then
-                            nearestDist = dist
-                            nearestEnemy = player
-                        end
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local hrp = char.HumanoidRootPart
+            local nearestDist = 18
+            local nearestEnemy = nil
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local enemyHrp = player.Character.HumanoidRootPart
+                    local dist = (enemyHrp.Position - hrp.Position).Magnitude
+                    if dist < nearestDist and dist > 6 then
+                        nearestDist = dist
+                        nearestEnemy = player
                     end
                 end
-                if nearestEnemy then
-                    -- Dash toward enemy
-                    local direction = (nearestEnemy.Character.HumanoidRootPart.Position - hrp.Position).Unit
-                    hrp.CFrame = hrp.CFrame + direction * 10
-                    VirtualUser:Button2Down(Vector2.new(0,0))
-                    wait(0.05)
-                    VirtualUser:Button2Up(Vector2.new(0,0))
-                end
+            end
+            
+            if nearestEnemy then
+                local enemyHrp = nearestEnemy.Character.HumanoidRootPart
+                local direction = (enemyHrp.Position - hrp.Position).Unit
+                hrp.CFrame = hrp.CFrame + direction * 12
+                VirtualUser:Button2Down(Vector2.new(0,0))
+                wait(0.05)
+                VirtualUser:Button2Up(Vector2.new(0,0))
             end
         end)
     end
 
-    -- INSTANT ULTIMATE
+    -- WORKING INSTANT ULTIMATE
     local function instantUlt()
         if not instantUltEnabled then return end
         pcall(function()
-            for _, v in pairs(LocalPlayer.Character:GetChildren()) do
-                if v:IsA("Tool") and v.Name:find("Ultimate") then
-                    v:Activate()
+            -- Try to find and activate ultimate
+            local backpack = LocalPlayer:FindFirstChild("Backpack")
+            if backpack then
+                for _, tool in pairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.Name:lower():find("ult") or tool.Name:lower():find("special")) then
+                        LocalPlayer.Character.Humanoid:EquipTool(tool)
+                        tool:Activate()
+                    end
+                end
+            end
+            -- Check character for ultimate tool
+            if LocalPlayer.Character then
+                for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.Name:lower():find("ult") or tool.Name:lower():find("special")) then
+                        tool:Activate()
+                    end
+                end
+            end
+            -- Alternative: Fire remote for ultimate
+            local replicated = game:GetService("ReplicatedStorage")
+            if replicated:FindFirstChild("Remotes") then
+                local ultRemote = replicated.Remotes:FindFirstChild("ActivateUltimate")
+                if ultRemote then
+                    ultRemote:FireServer()
                 end
             end
         end)
@@ -378,7 +411,7 @@ local function loadMainScript()
         end
     end)
 
-    print("TSB script loaded. FPS Boost active. ESP, Auto Block, Auto Dodge (fast), Auto Dash, Instant Ultimate.")
+    print("TSB script loaded. Real Dodge only triggers during enemy attacks. Ultimate now works.")
 end
 
 -- PASSWORD CHECK

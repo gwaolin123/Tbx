@@ -1,4 +1,4 @@
--- THE STRONGEST BATTLEGROUNDS COMPLETE SCRIPT (CodeX/Hydrogen)
+-- THE STRONGEST BATTLEGROUNDS OPTIMIZED SCRIPT (CodeX/Hydrogen)
 -- Password: astro
 
 -- LOGIN GUI
@@ -60,8 +60,28 @@ local function loadMainScript()
     local espEnabled = true
     local autoBlockEnabled = false
     local autoDodgeEnabled = false
-    local killAuraEnabled = false
+    local autoDashEnabled = false
     local instantUltEnabled = false
+
+    -- FPS BOOSTER
+    local function boostFPS()
+        pcall(function()
+            -- Disable shadows
+            game:GetService("Lighting").ShadowSoftness = 0
+            game:GetService("Lighting").Technology = Enum.Technology.Compatibility
+            -- Lower graphics settings
+            settings().Rendering.QualityLevel = 1
+            -- Disable unnecessary services
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            -- Clear decals
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("Decal") or v:IsA("Texture") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    end
+    boostFPS()
 
     -- GUI
     local screenGui = Instance.new("ScreenGui")
@@ -118,16 +138,10 @@ local function loadMainScript()
     local espBtn = createButton("EspBtn", 35, "ESP: ON")
     local blockBtn = createButton("BlockBtn", 75, "AUTO BLOCK: OFF")
     local dodgeBtn = createButton("DodgeBtn", 115, "AUTO DODGE: OFF")
-    local killBtn = createButton("KillBtn", 155, "KILL AURA: OFF")
+    local dashBtn = createButton("DashBtn", 155, "AUTO DASH: OFF")
     local ultBtn = createButton("UltBtn", 195, "INSTANT ULT: OFF")
 
     espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-
-    -- CHECK ENEMY
-    local function isEnemy(player)
-        if player == LocalPlayer then return false end
-        return true
-    end
 
     -- ESP
     local espLabels = {}
@@ -163,18 +177,19 @@ local function loadMainScript()
         end
     end
 
-    -- AUTO BLOCK (when enemy attacks)
+    -- IMPROVED AUTO BLOCK (instant reaction)
     local function autoBlock()
         if not autoBlockEnabled then return end
         pcall(function()
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("Humanoid") then
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("Part") and v.Name == "Hitbox" then
-                        local dist = (v.Position - char.HumanoidRootPart.Position).Magnitude
-                        if dist < 10 then
+                -- Detect nearby enemy attacks
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local arm = player.Character:FindFirstChild("RightArm") or player.Character:FindFirstChild("LeftArm")
+                        if arm and (arm.Position - char.HumanoidRootPart.Position).Magnitude < 12 then
                             VirtualUser:Button1Down(Vector2.new(0,0))
-                            wait(0.05)
+                            wait(0.01)
                             VirtualUser:Button1Up(Vector2.new(0,0))
                         end
                     end
@@ -183,39 +198,62 @@ local function loadMainScript()
         end)
     end
 
-    -- AUTO DODGE
+    -- IMPROVED AUTO DODGE (fast dash backward)
     local function autoDodge()
         if not autoDodgeEnabled then return end
         pcall(function()
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
+            if char and char:FindFirstChild("HumanoidRootPart") then
                 local hrp = char.HumanoidRootPart
-                local nearestDist = 15
+                local nearestDist = 12
+                local nearestEnemy = nil
                 for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local dist = (player.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
                         if dist < nearestDist then
-                            -- Dodge backward
-                            hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -5)
+                            nearestDist = dist
+                            nearestEnemy = player
                         end
                     end
+                end
+                if nearestEnemy then
+                    -- Fast dash away from enemy
+                    local direction = (hrp.Position - nearestEnemy.Character.HumanoidRootPart.Position).Unit
+                    hrp.CFrame = hrp.CFrame + direction * 15
+                    -- Also trigger dash ability
+                    VirtualUser:Button2Down(Vector2.new(0,0))
+                    wait(0.05)
+                    VirtualUser:Button2Up(Vector2.new(0,0))
                 end
             end
         end)
     end
 
-    -- KILL AURA
-    local function killAura()
-        if not killAuraEnabled then return end
+    -- AUTO DASH TO ENEMY (if needed)
+    local function autoDash()
+        if not autoDashEnabled then return end
         pcall(function()
             local char = LocalPlayer.Character
-            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                    VirtualUser:Button1Down(Vector2.new(0,0))
-                    wait(0.01)
-                    VirtualUser:Button1Up(Vector2.new(0,0))
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                local nearestDist = 20
+                local nearestEnemy = nil
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (player.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        if dist < nearestDist and dist > 8 then
+                            nearestDist = dist
+                            nearestEnemy = player
+                        end
+                    end
+                end
+                if nearestEnemy then
+                    -- Dash toward enemy
+                    local direction = (nearestEnemy.Character.HumanoidRootPart.Position - hrp.Position).Unit
+                    hrp.CFrame = hrp.CFrame + direction * 10
+                    VirtualUser:Button2Down(Vector2.new(0,0))
+                    wait(0.05)
+                    VirtualUser:Button2Up(Vector2.new(0,0))
                 end
             end
         end)
@@ -238,7 +276,7 @@ local function loadMainScript()
         updateESP()
         autoBlock()
         autoDodge()
-        killAura()
+        autoDash()
         if instantUltEnabled then
             instantUlt()
         end
@@ -268,10 +306,10 @@ local function loadMainScript()
         dodgeBtn.BackgroundColor3 = autoDodgeEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
-    killBtn.Activated:Connect(function()
-        killAuraEnabled = not killAuraEnabled
-        killBtn.Text = killAuraEnabled and "KILL AURA: ON" or "KILL AURA: OFF"
-        killBtn.BackgroundColor3 = killAuraEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    dashBtn.Activated:Connect(function()
+        autoDashEnabled = not autoDashEnabled
+        dashBtn.Text = autoDashEnabled and "AUTO DASH: ON" or "AUTO DASH: OFF"
+        dashBtn.BackgroundColor3 = autoDashEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
     ultBtn.Activated:Connect(function()
@@ -340,7 +378,7 @@ local function loadMainScript()
         end
     end)
 
-    print("TSB script loaded. ESP, Auto Block, Auto Dodge, Kill Aura, Instant Ultimate.")
+    print("TSB script loaded. FPS Boost active. ESP, Auto Block, Auto Dodge (fast), Auto Dash, Instant Ultimate.")
 end
 
 -- PASSWORD CHECK

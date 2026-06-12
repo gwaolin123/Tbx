@@ -1,0 +1,356 @@
+-- THE STRONGEST BATTLEGROUNDS COMPLETE SCRIPT (CodeX/Hydrogen)
+-- Password: astro
+
+-- LOGIN GUI
+local loginGui = Instance.new("ScreenGui")
+loginGui.Name = "LoginGUI"
+loginGui.Parent = game:GetService("CoreGui")
+
+local loginFrame = Instance.new("Frame")
+loginFrame.Size = UDim2.new(0, 250, 0, 150)
+loginFrame.Position = UDim2.new(0.5, -125, 0.5, -75)
+loginFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+loginFrame.BackgroundTransparency = 0.1
+loginFrame.BorderSizePixel = 3
+loginFrame.BorderColor3 = Color3.new(1, 0.5, 0)
+loginFrame.Parent = loginGui
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.Text = "ENTER PASSWORD"
+titleLabel.TextColor3 = Color3.new(1, 1, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Parent = loginFrame
+
+local passwordBox = Instance.new("TextBox")
+passwordBox.Size = UDim2.new(0, 200, 0, 40)
+passwordBox.Position = UDim2.new(0.5, -100, 0, 50)
+passwordBox.PlaceholderText = "Password"
+passwordBox.Text = ""
+passwordBox.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+passwordBox.TextColor3 = Color3.new(1, 1, 1)
+passwordBox.Parent = loginFrame
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 100, 0, 35)
+submitBtn.Position = UDim2.new(0.5, -50, 0, 100)
+submitBtn.Text = "SUBMIT"
+submitBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+submitBtn.Parent = loginFrame
+
+local errorText = Instance.new("TextLabel")
+errorText.Size = UDim2.new(1, 0, 0, 25)
+errorText.Position = UDim2.new(0, 0, 0, 140)
+errorText.Text = ""
+errorText.TextColor3 = Color3.new(1, 0, 0)
+errorText.BackgroundTransparency = 1
+errorText.Parent = loginFrame
+
+local function loadMainScript()
+    loginGui:Destroy()
+    
+    -- MAIN SCRIPT START
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = workspace.CurrentCamera
+    local VirtualUser = game:GetService("VirtualUser")
+
+    local espEnabled = true
+    local autoBlockEnabled = false
+    local autoDodgeEnabled = false
+    local killAuraEnabled = false
+    local instantUltEnabled = false
+
+    -- GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "TSBGUI"
+    screenGui.Parent = game:GetService("CoreGui")
+    screenGui.ResetOnSpawn = false
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 200, 0, 280)
+    mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
+    mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+    mainFrame.BackgroundTransparency = 0.3
+    mainFrame.BorderSizePixel = 2
+    mainFrame.BorderColor3 = Color3.new(1, 0.5, 0)
+    mainFrame.Parent = screenGui
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Text = "TSB | astro"
+    title.TextColor3 = Color3.new(1, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Parent = mainFrame
+
+    local hideBtn = Instance.new("TextButton")
+    hideBtn.Size = UDim2.new(0, 50, 0, 25)
+    hideBtn.Position = UDim2.new(0.7, 0, 0, 2)
+    hideBtn.Text = "━"
+    hideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    hideBtn.Parent = mainFrame
+
+    local floatingCircle = Instance.new("TextButton")
+    floatingCircle.Size = UDim2.new(0, 55, 0, 55)
+    floatingCircle.Position = UDim2.new(0.02, 0, 0.85, 0)
+    floatingCircle.BackgroundColor3 = Color3.new(1, 0.5, 0)
+    floatingCircle.BackgroundTransparency = 0.2
+    floatingCircle.Text = "A"
+    floatingCircle.TextColor3 = Color3.new(1, 1, 1)
+    floatingCircle.TextSize = 28
+    floatingCircle.TextScaled = true
+    floatingCircle.Parent = screenGui
+    floatingCircle.Visible = false
+
+    local function createButton(name, y, text)
+        local btn = Instance.new("TextButton")
+        btn.Name = name
+        btn.Size = UDim2.new(0, 170, 0, 35)
+        btn.Position = UDim2.new(0, 15, 0, y)
+        btn.Text = text
+        btn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
+        btn.Parent = mainFrame
+        return btn
+    end
+
+    local espBtn = createButton("EspBtn", 35, "ESP: ON")
+    local blockBtn = createButton("BlockBtn", 75, "AUTO BLOCK: OFF")
+    local dodgeBtn = createButton("DodgeBtn", 115, "AUTO DODGE: OFF")
+    local killBtn = createButton("KillBtn", 155, "KILL AURA: OFF")
+    local ultBtn = createButton("UltBtn", 195, "INSTANT ULT: OFF")
+
+    espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
+
+    -- CHECK ENEMY
+    local function isEnemy(player)
+        if player == LocalPlayer then return false end
+        return true
+    end
+
+    -- ESP
+    local espLabels = {}
+    local function updateESP()
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                if not espLabels[player] then
+                    local label = Instance.new("TextLabel")
+                    label.Size = UDim2.new(0, 120, 0, 22)
+                    label.BackgroundColor3 = Color3.new(0, 0, 0)
+                    label.BackgroundTransparency = 0.5
+                    label.BorderSizePixel = 1
+                    label.Parent = screenGui
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 13
+                    espLabels[player] = label
+                end
+                local label = espLabels[player]
+                if espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                    if onScreen then
+                        label.TextColor3 = Color3.new(1, 0, 0)
+                        label.Text = player.Name
+                        label.Position = UDim2.new(0, rootPos.X - 60, 0, rootPos.Y - 40)
+                        label.Visible = true
+                    else
+                        label.Visible = false
+                    end
+                else
+                    if label then label.Visible = false end
+                end
+            end
+        end
+    end
+
+    -- AUTO BLOCK (when enemy attacks)
+    local function autoBlock()
+        if not autoBlockEnabled then return end
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Part") and v.Name == "Hitbox" then
+                        local dist = (v.Position - char.HumanoidRootPart.Position).Magnitude
+                        if dist < 10 then
+                            VirtualUser:Button1Down(Vector2.new(0,0))
+                            wait(0.05)
+                            VirtualUser:Button1Up(Vector2.new(0,0))
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- AUTO DODGE
+    local function autoDodge()
+        if not autoDodgeEnabled then return end
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                local hrp = char.HumanoidRootPart
+                local nearestDist = 15
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (player.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        if dist < nearestDist then
+                            -- Dodge backward
+                            hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -5)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- KILL AURA
+    local function killAura()
+        if not killAuraEnabled then return end
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    VirtualUser:Button1Down(Vector2.new(0,0))
+                    wait(0.01)
+                    VirtualUser:Button1Up(Vector2.new(0,0))
+                end
+            end
+        end)
+    end
+
+    -- INSTANT ULTIMATE
+    local function instantUlt()
+        if not instantUltEnabled then return end
+        pcall(function()
+            for _, v in pairs(LocalPlayer.Character:GetChildren()) do
+                if v:IsA("Tool") and v.Name:find("Ultimate") then
+                    v:Activate()
+                end
+            end
+        end)
+    end
+
+    -- MAIN LOOP
+    RunService.RenderStepped:Connect(function()
+        updateESP()
+        autoBlock()
+        autoDodge()
+        killAura()
+        if instantUltEnabled then
+            instantUlt()
+        end
+    end)
+
+    -- BUTTONS
+    espBtn.Activated:Connect(function()
+        espEnabled = not espEnabled
+        espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
+        espBtn.BackgroundColor3 = espEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+        if not espEnabled then
+            for _, label in pairs(espLabels) do
+                if label then label.Visible = false end
+            end
+        end
+    end)
+
+    blockBtn.Activated:Connect(function()
+        autoBlockEnabled = not autoBlockEnabled
+        blockBtn.Text = autoBlockEnabled and "AUTO BLOCK: ON" or "AUTO BLOCK: OFF"
+        blockBtn.BackgroundColor3 = autoBlockEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    end)
+
+    dodgeBtn.Activated:Connect(function()
+        autoDodgeEnabled = not autoDodgeEnabled
+        dodgeBtn.Text = autoDodgeEnabled and "AUTO DODGE: ON" or "AUTO DODGE: OFF"
+        dodgeBtn.BackgroundColor3 = autoDodgeEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    end)
+
+    killBtn.Activated:Connect(function()
+        killAuraEnabled = not killAuraEnabled
+        killBtn.Text = killAuraEnabled and "KILL AURA: ON" or "KILL AURA: OFF"
+        killBtn.BackgroundColor3 = killAuraEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    end)
+
+    ultBtn.Activated:Connect(function()
+        instantUltEnabled = not instantUltEnabled
+        ultBtn.Text = instantUltEnabled and "INSTANT ULT: ON" or "INSTANT ULT: OFF"
+        ultBtn.BackgroundColor3 = instantUltEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    end)
+
+    -- HIDE/SHOW
+    hideBtn.Activated:Connect(function()
+        mainFrame.Visible = false
+        floatingCircle.Visible = true
+    end)
+
+    floatingCircle.Activated:Connect(function()
+        mainFrame.Visible = true
+        floatingCircle.Visible = false
+    end)
+
+    -- DRAG
+    local dragStart, frameStart, isDragging
+    mainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            dragStart = input.Position
+            frameStart = mainFrame.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(frameStart.X.Scale, frameStart.X.Offset + delta.X, frameStart.Y.Scale, frameStart.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+
+    local circleDragStart, circleStartPos, isCircleDragging
+    floatingCircle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isCircleDragging = true
+            circleDragStart = input.Position
+            circleStartPos = floatingCircle.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if isCircleDragging and input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - circleDragStart
+            floatingCircle.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            isCircleDragging = false
+        end
+    end)
+
+    -- CLEANUP
+    Players.PlayerRemoving:Connect(function(player)
+        if espLabels[player] then
+            espLabels[player]:Destroy()
+            espLabels[player] = nil
+        end
+    end)
+
+    print("TSB script loaded. ESP, Auto Block, Auto Dodge, Kill Aura, Instant Ultimate.")
+end
+
+-- PASSWORD CHECK
+local function checkPassword()
+    if passwordBox.Text == "astro" then
+        loadMainScript()
+    else
+        errorText.Text = "Incorrect password"
+    end
+end
+
+submitBtn.MouseButton1Click:Connect(checkPassword)
+passwordBox.FocusLost:Connect(checkPassword)
